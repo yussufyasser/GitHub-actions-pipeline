@@ -47,13 +47,21 @@ jobs:
           sudo apt update && sudo apt install terraform -y
           terraform -version
 
-
       - name: Get EKS values from AWS
         id: eks_values
         run: |
           VPC_ID=$(aws eks describe-cluster --name mycluster3 --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
-          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-          PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+
+          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets \
+            --filters "Name=tag:kubernetes.io/role/elb,Values=1" \
+                      "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster3" \
+            --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+
+          PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets \
+            --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" \
+                      "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster3" \
+            --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+
           SG_ID=$(aws eks describe-cluster --name mycluster3 --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
 
           echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
@@ -61,19 +69,17 @@ jobs:
           echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
           echo "sg_id=$SG_ID" >> $GITHUB_OUTPUT
 
-
       - name: Decode SSH private key
         run: |
           echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > my-ec2-key.pem
           chmod 600 my-ec2-key.pem
-
 
       - name: Terraform Apply
         working-directory: terraform
         run: |
           terraform init
           terraform apply -auto-approve \
-            -var="vpc-id=${{ steps.eks_values.outputs.vpc_id }}" \
+            -var="vpc_id=${{ steps.eks_values.outputs.vpc_id }}" \
             -var="public_subnet_id=${{ steps.eks_values.outputs.public_subnet_id }}" \
             -var="private_subnet_id=${{ steps.eks_values.outputs.private_subnet_id }}" \
             -var="eks_worker_sg_id=${{ steps.eks_values.outputs.sg_id }}" \
