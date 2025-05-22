@@ -50,6 +50,5 @@ jobs:
       # 5. Run your deployment logic (placeholder)
       - name: Deploy project
         run: |
-          echo "You can now run:"
-          echo "- eksctl create cluster"
+          eksctl create cluster -n mycluster"
 
