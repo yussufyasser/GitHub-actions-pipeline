@@ -60,15 +60,15 @@ jobs:
       # 4. Run your deployment logic (placeholder)
       - name: Deploy project
         run: |
-          eksctl create cluster -n mycluster
+          eksctl create cluster -n mycluster1
 
       - name: Get EKS values from AWS
         id: eks_values
         run: |
-          VPC_ID=$(aws eks describe-cluster --name mycluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
+          VPC_ID=$(aws eks describe-cluster --name mycluster1 --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
           PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
           PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-          SG_ID=$(aws eks describe-cluster --name mycluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
+          SG_ID=$(aws eks describe-cluster --name mycluster1 --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
 
           echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
           echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
@@ -95,7 +95,7 @@ jobs:
 
 
       - name: Configure kubeconfig
-        run: aws eks update-kubeconfig --name mycluster --region $AWS_REGION
+        run: aws eks update-kubeconfig --name mycluster1 --region $AWS_REGION
 
       - name: Apply K8s resources
         run: kubectl apply -f kubernetes/k8s.yaml
