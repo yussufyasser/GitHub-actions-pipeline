@@ -27,11 +27,13 @@ jobs:
       # 3. Install kubectl
       - name: Install kubectl
         run: |
-          KUBECTL_VERSION=$(curl -s https://dl.k8s.io/release/stable.txt)
+          curl -s -o version.txt https://dl.k8s.io/release/stable.txt
+          KUBECTL_VERSION=$(cat version.txt)
           curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
           chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
+          sudo mv kubectl /usr/local/bin/kubectl
           kubectl version --client
+
 
 
       # 4. Install Terraform
