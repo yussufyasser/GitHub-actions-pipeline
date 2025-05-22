@@ -1,19 +1,11 @@
-variable "vpc-id" {
-  default = "vpc-0537d654d83b9d6ab"
-}
+variable "vpc-id" {}
 
-variable "private-subnet_id" {
-  default = "subnet-0402ab85bb446ca6d"
-}
+variable "private-subnet_id" {}
 
-variable "public_subnet_id" {
-  default = "subnet-0247a495353a38021"
-}
+variable "public_subnet_id" {}
 
 
-variable "eks_worker_sg_id" {
-  default = "sg-0e29193bd03cbf6cb"
-}
+variable "eks_worker_sg_id" {}
 
 
 variable "my_ip" {
@@ -22,7 +14,7 @@ variable "my_ip" {
 
 
 variable "key_name" {
-  default = "my-ec2-key.pem"
+  default = "my-ec2-key"
 }
 
 
