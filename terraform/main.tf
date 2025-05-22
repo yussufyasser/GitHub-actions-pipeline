@@ -1,7 +1,7 @@
 module "security_groups" {
   source      = "./Modules/Security-Groups"
   my_ip = var.my_ip
-  vpc-id = var.vpc-id
+  vpc-id = var.vpc_id
   eks_worker_sg_id = var.eks_worker_sg_id
 }
 

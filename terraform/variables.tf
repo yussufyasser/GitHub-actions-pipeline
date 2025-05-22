@@ -10,7 +10,7 @@ variable "my_ip" {
 }
 
 
-variable "vpc-id" {}
+variable "vpc_id" {}
 
 
 variable "key_name" {
