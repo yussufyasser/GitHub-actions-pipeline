@@ -10,7 +10,7 @@ module "ec2" {
   mongo-sg = module.security_groups.mongo_sg_id
   bastion-sg = module.security_groups.bastion_sg_id
   key-name = var.key_name
-  private-subnet = var.private-subnet_id
+  private-subnet = var.private_subnet_id
   public-subnet = var.public_subnet_id
   local-ami = var.ami_id
 }

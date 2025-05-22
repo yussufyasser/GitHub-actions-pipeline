@@ -2,7 +2,13 @@ variable "public_subnet_id" {}
 
 variable "private_subnet_id" {}
 
-variable "eks_worker_sg_id" {}
+variable "eks_worker_sg_id" {
+}
+
+variable "my_ip" {
+  default = "0.0.0.0/0"
+}
+
 
 variable "vpc-id" {}
 
