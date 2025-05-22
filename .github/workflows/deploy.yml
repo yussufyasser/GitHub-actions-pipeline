@@ -25,14 +25,16 @@ jobs:
           eksctl version
 
       # 3. Install kubectl
-      - name: Install kubectl
-        run: |
-          curl -s -o version.txt https://dl.k8s.io/release/stable.txt
-          KUBECTL_VERSION=$(cat version.txt)
-          curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/kubectl
-          kubectl version --client
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'  # specify the version you want
+
+      - name: Verify kubectl
+        run: kubectl version --client
 
 
 
