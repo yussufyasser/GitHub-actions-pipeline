@@ -47,6 +47,12 @@ jobs:
           sudo apt update && sudo apt install terraform -y
           terraform -version
 
+
+      - name: Cleanup existing cluster (if exists)
+        continue-on-error: true
+        run: |
+          eksctl delete cluster --name mycluster --region $AWS_REGION
+
       # 4. Run your deployment logic (placeholder)
       - name: Deploy project
         run: |
