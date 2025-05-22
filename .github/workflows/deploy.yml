@@ -87,7 +87,7 @@ jobs:
 
 
       - name: Configure kubeconfig
-        run: aws eks update-kubeconfig --name mycluster1 --region $AWS_REGION
+        run: aws eks update-kubeconfig --name mycluster3 --region $AWS_REGION
 
       - name: Apply K8s resources
         run: kubectl apply -f kubernetes/k8s.yaml
