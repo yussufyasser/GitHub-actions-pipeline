@@ -118,7 +118,7 @@ jobs:
         run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
 
       - name: Apply Kubernetes resources
-        run: kubectl apply -f kubernetes/k8s.yaml
+        run: kubectl apply -f kubernetes/
 
       - name: Get Kubernetes services
         run: kubectl get svc
