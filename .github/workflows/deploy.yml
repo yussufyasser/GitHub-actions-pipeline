@@ -2,7 +2,7 @@ name: Terraform Infra & K8s Apply
 
 on:
   workflow_run:
-    workflows: ["EKS Terraform K8s Deploy"]
+    workflows: ["EKS_Deploy"]
     types:
       - completed
 
