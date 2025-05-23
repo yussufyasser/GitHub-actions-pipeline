@@ -94,7 +94,12 @@ jobs:
         run: |
           ansible-playbook -i dynamic_inventory.ini ansible/mongodb-playbook.yml --private-key my-ec2-key.pem
 
-
+      #install kubectl
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'
+  
       - name: Generate ConfigMap with MongoDB IP
         run: |
           mkdir -p kubernetes/generated
