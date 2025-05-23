@@ -19,5 +19,5 @@ variable "key_name" {
 
 
 variable "ami_id" {
-  default = "ami-0c02fb55956c7d316"
+  default = "ami-0e58b56aa4d64231b"
 }
