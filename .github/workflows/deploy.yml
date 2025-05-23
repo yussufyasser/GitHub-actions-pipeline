@@ -31,6 +31,13 @@ jobs:
           eval "$(ssh-agent -s)"
           ssh-add my-ec2-key.pem
 
+
+      - name: Test raw SSH through bastion
+        run: |
+          ssh -o "StrictHostKeyChecking=no" \
+              -o ProxyCommand="ssh -i my-ec2-key.pem -W %h:%p ec2-user@3.232.133.47" \
+              -i my-ec2-key.pem ec2-user@192.168.82.19 "hostname"
+
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i ansible/inventory ansible/mongodb-playbook.yml --private-key my-ec2-key.pem
