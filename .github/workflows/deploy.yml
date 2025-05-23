@@ -9,7 +9,6 @@ on:
 jobs:
   ansible:
     runs-on: ubuntu-latest
-
     env:
       ANSIBLE_HOST_KEY_CHECKING: False
 
@@ -22,19 +21,16 @@ jobs:
           sudo apt update
           sudo apt install -y ansible sshpass
 
-      - name: Decode Bastion and EC2 Keys
+      - name: Decode SSH Key
         run: |
-          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > bastion.pem
           echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > my-ec2-key.pem
-          chmod 600 bastion.pem my-ec2-key.pem
+          chmod 600 my-ec2-key.pem
 
-      - name: Add both keys to SSH agent
+      - name: Add key to SSH agent
         run: |
           eval "$(ssh-agent -s)"
-          ssh-add bastion.pem
           ssh-add my-ec2-key.pem
 
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook -i ansible/inventory ansible/mongodb-playbook.yml --private-key my-ec2-key.pem
-
+          ansible-playbook -i ansible/ansible/inventory ansible/ansible/mongodb-playbook.yml --private-key my-ec2-key.pem
