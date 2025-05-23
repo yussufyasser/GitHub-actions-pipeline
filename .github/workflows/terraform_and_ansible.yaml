@@ -1,0 +1,72 @@
+name: Terraform Infra & Ansible MongoDB Deploy
+
+on:
+  workflow_run:
+    workflows: ["EKS_Deploy"]
+    types:
+      - completed
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      ANSIBLE_HOST_KEY_CHECKING: False
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      #Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ansible sshpass jq unzip
+
+      #Decode SSH key
+      - name: Decode SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > my-ec2-key.pem
+          chmod 600 my-ec2-key.pem
+
+      #Start SSH agent and add key
+      - name: Start SSH agent and add key
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add my-ec2-key.pem
+
+      #Terraform Init & Apply
+      - name: Terraform Init & Apply
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      #Extract Bastion and Private IPs
+      - name: Extract Bastion and Private IPs
+        working-directory: terraform
+        id: tf_outputs
+        run: |
+          output=$(terraform output -json)
+          bastion_ip=$(echo "$output" | jq -r '.bastion_public_ip.value')
+          private_ip=$(echo "$output" | jq -r '.private_ec2_private_ip.value')
+
+          echo "BASTION_IP=$bastion_ip" >> $GITHUB_ENV
+          echo "PRIVATE_IP=$private_ip" >> $GITHUB_ENV
+
+      #Generate Ansible inventory file
+      - name: Generate Ansible inventory file
+        run: |
+          cat <<EOF > dynamic_inventory.ini
+          [mongodb]
+          private-instance ansible_host=${{ env.PRIVATE_IP }} ansible_user=ec2-user
+
+          [mongodb:vars]
+          ansible_ssh_common_args='-o ProxyCommand="ssh -o StrictHostKeyChecking=no -i my-ec2-key.pem -W %h:%p ec2-user@${{ env.BASTION_IP }}" -o StrictHostKeyChecking=no'
+          EOF
+
+      #Run Ansible Playbook
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i dynamic_inventory.ini ansible/mongodb-playbook.yml --private-key my-ec2-key.pem

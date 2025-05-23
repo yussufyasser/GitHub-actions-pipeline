@@ -1,0 +1,19 @@
+name: Clean_Up
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+
+      #Terraform destroy
+      - name: Terraform Init & destroy
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform destroy -auto-approve
