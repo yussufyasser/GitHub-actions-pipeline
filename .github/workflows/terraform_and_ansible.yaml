@@ -93,3 +93,28 @@ jobs:
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i dynamic_inventory.ini ansible/mongodb-playbook.yml --private-key my-ec2-key.pem
+
+
+      - name: Generate ConfigMap with MongoDB IP
+        run: |
+          mkdir -p kubernetes/generated
+          cat <<EOF | envsubst > kubernetes/generated/configmap.yaml
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: chat-app-config
+          data:
+            DB_NAME: "chatdb"
+            MONGO_HOST: "${PRIVATE_IP}"
+            MONGO_PORT: "27017"
+          EOF
+
+      - name: Configure kubeconfig
+        run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
+
+      - name: Apply Kubernetes resources
+        run: kubectl apply -f kubernetes/k8s.yaml
+
+      - name: Get Kubernetes services
+        run: kubectl get svc
+

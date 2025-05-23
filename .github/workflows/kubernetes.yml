@@ -1,0 +1,37 @@
+name: Kubernetes Deploy
+
+on:
+  workflow_run:
+    workflows: ["Terraform Infra & Ansible MongoDB Deploy"]
+    types:
+      - completed
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      ANSIBLE_HOST_KEY_CHECKING: False
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      #install kubectl
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'
+      
+      # Configure kubeconfig
+      - name: Configure kubeconfig
+        run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
+      
+      #Apply Kubernetes resources
+      - name: Apply Kubernetes resources
+        run: kubectl apply -f kubernetes/k8s.yaml
+
+      - name: Get Kubernetes services
+        run: kubectl get svc
+
