@@ -15,3 +15,56 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+
+
+      #Install eksctl
+      - name: Install eksctl
+        run: |
+          curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+          sudo mv /tmp/eksctl /usr/local/bin
+          eksctl version
+
+       #Delete existing cluster and nodegroup stacks
+      - name: Delete existing cluster and nodegroup stacks
+        continue-on-error: true
+        run: |
+          echo "Deleting EKS cluster 'appcluster' if it exists..."
+          eksctl delete cluster --name appcluster --region $AWS_REGION || true
+
+          echo "Deleting main CloudFormation stack..."
+          aws cloudformation delete-stack --stack-name eksctl-appcluster-cluster --region $AWS_REGION || true
+
+          echo "Finding and deleting nodegroup stacks..."
+          STACKS=$(aws cloudformation list-stacks \
+            --region $AWS_REGION \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE ROLLBACK_COMPLETE \
+            --query "StackSummaries[?starts_with(StackName, 'eksctl-appcluster-nodegroup-')].StackName" \
+            --output text)
+
+          for STACK in $STACKS; do
+            echo "Deleting nodegroup stack: $STACK"
+            aws cloudformation delete-stack --stack-name "$STACK" --region $AWS_REGION || true
+          done
+
+          echo "Waiting for the main stack deletion to finish..."
+          while true; do
+            STATUS=$(aws cloudformation describe-stacks --stack-name eksctl-appcluster-cluster --region $AWS_REGION \
+              --query "Stacks[0].StackStatus" --output text 2>/dev/null)
+
+            if [[ "$STATUS" == "DELETE_IN_PROGRESS" ]]; then
+              echo "Still deleting... waiting 15 seconds."
+              sleep 15
+            elif [[ "$STATUS" == "DELETE_COMPLETE" || "$STATUS" == "STACK_NOT_FOUND" ]]; then
+              echo "Deletion complete or stack not found. Continuing..."
+              break
+            else
+              echo "Unexpected status: $STATUS"
+              break
+            fi
+          done
+
+
+      # Create new EKS cluster
+      - name: Create EKS cluster
+        run: |
+          eksctl create cluster -n appcluster
