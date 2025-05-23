@@ -31,6 +31,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: eks-outputs
+          path: .
+
 
       - name: Load EKS outputs into environment variables
         run: |
