@@ -35,6 +35,6 @@ jobs:
           ssh-add my-ec2-key.pem
 
       - name: Run Ansible Playbook
-        working-directory: ansible/ansible
         run: |
-          ansible-playbook -i inventory mongodb-playbook.yml --private-key my-ec2-key.pem
+          ansible-playbook -i ansible/inventory ansible/mongodb-playbook.yml --private-key my-ec2-key.pem
+
