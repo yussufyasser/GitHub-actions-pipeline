@@ -14,7 +14,7 @@
 
 - name: Install MongoDB
   yum:
-    name: mongodb-org-6.0.13
+    name: mongodb-org
     state: present
 
 - name: Allow remote connections in mongod.conf
