@@ -1,10 +1,14 @@
-name: EKS Terraform K8s Deploy
+name: Terraform Infra & K8s Apply
 
 on:
-  workflow_dispatch: 
+  workflow_run:
+    workflows: ["EKS Terraform K8s Deploy"]
+    types:
+      - completed
 
 jobs:
-  deploy:
+  terraform:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     env:
@@ -13,84 +17,57 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-
-      # 1. Install eksctl
-      - name: Install eksctl
-        run: |
-          curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
-          sudo mv /tmp/eksctl /usr/local/bin
-          eksctl version
-
-      # 2. Install kubectl
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up kubectl
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws --version
+
+      - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'v1.29.0'  
+          version: 'v1.29.0'
 
-      - name: Verify kubectl
-        run: kubectl version --client
+      - name: Download EKS outputs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: eks-outputs
 
-
-
-      # 3. Install Terraform
-      - name: Install Terraform
+      - name: Load EKS outputs into environment variables
         run: |
-          sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
-          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-          sudo apt update && sudo apt install terraform -y
-          terraform -version
-
-      - name: Get EKS values from AWS
-        id: eks_values
-        run: |
-          VPC_ID=$(aws eks describe-cluster --name mycluster3 --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
-
-          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets \
-            --filters "Name=tag:kubernetes.io/role/elb,Values=1" \
-                      "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster3" \
-            --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-
-          PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets \
-            --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" \
-                      "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster3" \
-            --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-
-          SG_ID=$(aws eks describe-cluster --name mycluster3 --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
-
-          echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
-          echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
-          echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
-          echo "sg_id=$SG_ID" >> $GITHUB_OUTPUT
+          echo "vpc_id=$(cat vpc_id.txt)" >> $GITHUB_ENV
+          echo "public_subnet_id=$(cat public_subnet_id.txt)" >> $GITHUB_ENV
+          echo "private_subnet_id=$(cat private_subnet_id.txt)" >> $GITHUB_ENV
+          echo "sg_id=$(cat sg_id.txt)" >> $GITHUB_ENV
 
       - name: Decode SSH private key
         run: |
           echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > my-ec2-key.pem
           chmod 600 my-ec2-key.pem
 
-      - name: Terraform Apply
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init and Apply
         working-directory: terraform
         run: |
           terraform init
           terraform apply -auto-approve \
-            -var="vpc_id=${{ steps.eks_values.outputs.vpc_id }}" \
-            -var="public_subnet_id=${{ steps.eks_values.outputs.public_subnet_id }}" \
-            -var="private_subnet_id=${{ steps.eks_values.outputs.private_subnet_id }}" \
-            -var="eks_worker_sg_id=${{ steps.eks_values.outputs.sg_id }}" \
+            -var="vpc-id=${{ env.vpc_id }}" \
+            -var="public_subnet_id=${{ env.public_subnet_id }}" \
+            -var="private_subnet_id=${{ env.private_subnet_id }}" \
+            -var="eks_worker_sg_id=${{ env.sg_id }}" \
             -var="key_name=my-ec2-key"
 
-
       - name: Configure kubeconfig
-        run: aws eks update-kubeconfig --name mycluster3 --region $AWS_REGION
+        run: aws eks update-kubeconfig --name mycluster --region $AWS_REGION
 
-      - name: Apply K8s resources
+      - name: Apply Kubernetes resources
         run: kubectl apply -f kubernetes/k8s.yaml
 
-      - name: Get services
+      - name: Get Kubernetes services
         run: kubectl get svc

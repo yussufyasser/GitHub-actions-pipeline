@@ -1,0 +1,69 @@
+name: EKS Deploy
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+
+      #Install eksctl
+      - name: Install eksctl
+        run: |
+          curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+          sudo mv /tmp/eksctl /usr/local/bin
+          eksctl version
+
+
+      #clean exisisting EKS
+      - name: Cleanup existing cluster (if exists)
+        continue-on-error: true
+        run: |
+          eksctl delete cluster --name mycluster --region $AWS_REGION
+
+      - name: Wait 10 min seconds to ensure deletion finishes
+        run: sleep 600
+
+
+      #create EKS
+      - name: create EKS cluster
+        run: |
+          eksctl create cluster -n mycluster
+
+      - name: Get EKS values from AWS
+        id: eks_values
+        run: |
+          VPC_ID=$(aws eks describe-cluster --name mycluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
+          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+          PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+          SG_ID=$(aws eks describe-cluster --name mycluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
+
+          echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
+          echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
+          echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
+          echo "sg_id=$SG_ID" >> $GITHUB_OUTPUT
+       
+       #Save EKS outputs to files
+      - name: Save EKS outputs to files
+        run: |
+          mkdir -p eks_outputs
+          echo "${{ steps.eks_values.outputs.vpc_id }}" > eks_outputs/vpc_id.txt
+          echo "${{ steps.eks_values.outputs.public_subnet_id }}" > eks_outputs/public_subnet_id.txt
+          echo "${{ steps.eks_values.outputs.private_subnet_id }}" > eks_outputs/private_subnet_id.txt
+          echo "${{ steps.eks_values.outputs.sg_id }}" > eks_outputs/sg_id.txt
+
+      - name: Upload EKS outputs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eks-outputs
+          path: eks_outputs/
