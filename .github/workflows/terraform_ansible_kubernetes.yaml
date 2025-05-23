@@ -47,7 +47,31 @@ jobs:
           VPC_ID=$(aws eks describe-cluster --name appcluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
           PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=appcluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
           PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=appcluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-          SG_ID=$(aws eks describe-cluster --name appcluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
+          
+          # Get the name of the node group (assuming only one)
+          NODEGROUP_NAME=$(aws eks list-nodegroups --cluster-name appcluster --region $AWS_REGION --query "nodegroups[0]" --output text)
+
+          # Get the name of the Auto Scaling Group
+          ASG_NAME=$(aws eks describe-nodegroup \
+            --cluster-name appcluster \
+            --nodegroup-name $NODEGROUP_NAME \
+            --region $AWS_REGION \
+            --query "nodegroup.resources.autoScalingGroups[0].name" \
+            --output text)
+
+          # Get the ID of the first EC2 instance in that ASG
+          INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups \
+            --auto-scaling-group-names $ASG_NAME \
+            --region $AWS_REGION \
+            --query "AutoScalingGroups[0].Instances[0].InstanceId" \
+            --output text)
+
+          # Get the Security Group ID of the instance
+          SG_ID=$(aws ec2 describe-instances \
+            --instance-ids $INSTANCE_ID \
+            --region $AWS_REGION \
+            --query "Reservations[0].Instances[0].SecurityGroups[0].GroupId" \
+            --output text)
 
           echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
           echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
