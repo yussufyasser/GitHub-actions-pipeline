@@ -36,12 +36,31 @@ jobs:
           eval "$(ssh-agent -s)"
           ssh-add my-ec2-key.pem
 
+      #get EKS values
+      - name: Get EKS values from AWS
+        id: eks_values
+        run: |
+          VPC_ID=$(aws eks describe-cluster --name appcluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
+          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=appcluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+          PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=appcluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+          SG_ID=$(aws eks describe-cluster --name appcluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
+
+          echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
+          echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
+          echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
+          echo "sg_id=$SG_ID" >> $GITHUB_OUTPUT
+
       #Terraform Init & Apply
-      - name: Terraform Init & Apply
+      - name: Terraform Init and Apply
         working-directory: terraform
         run: |
           terraform init
-          terraform apply -auto-approve
+          terraform apply -auto-approve \
+            -var="vpc_id=${{ steps.eks_values.outputs.vpc_id }}" \
+            -var="public_subnet_id=${{ steps.eks_values.outputs.public_subnet_id }}" \
+            -var="private_subnet_id=${{ steps.eks_values.outputs.private_subnet_id }}" \
+            -var="eks_worker_sg_id=${{ steps.eks_values.outputs.sg_id }}" \
+            -var="key_name=my-ec2-key"
 
       #Extract Bastion and Private IPs
       - name: Extract Bastion and Private IPs
