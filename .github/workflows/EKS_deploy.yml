@@ -1,4 +1,4 @@
-name: EKS Deploy
+name: EKS  Deploy
 
 on:
   workflow_dispatch: 
@@ -31,8 +31,19 @@ jobs:
         run: |
           eksctl delete cluster --name mycluster --region $AWS_REGION
 
-      - name: Wait 10 min seconds to ensure deletion finishes
-        run: sleep 600
+      - name: Wait for cluster deletion (only if it existed)
+        run: |
+          for i in {1..30}; do
+            echo "Checking if EKS cluster 'mycluster' still exists..."
+            aws eks describe-cluster --name mycluster --region $AWS_REGION > /dev/null 2>&1
+            if [ $? -ne 0 ]; then
+              echo "Cluster 'mycluster' no longer exists."
+              break
+            fi
+            echo "Cluster still exists. Waiting..."
+            sleep 20
+          done
+
 
 
       #create EKS
