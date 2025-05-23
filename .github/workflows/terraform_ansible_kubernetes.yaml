@@ -122,4 +122,7 @@ jobs:
 
       - name: Get Kubernetes services
         run: kubectl get svc
+      - name: Get Kubernetes Map
+        run: kubectl get configmap chat-app-config -o yaml
+        
 
