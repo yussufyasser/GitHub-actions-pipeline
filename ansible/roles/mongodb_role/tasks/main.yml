@@ -3,12 +3,12 @@
 - name: Add MongoDB Yum repo
   copy:
     content: |
-      [mongodb-org-6.0]
+      [mongodb-org-7.0]
       name=MongoDB Repository
-      baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/6.0/x86_64/
+      baseurl=https://repo.mongodb.org/yum/amazon/2023/mongodb-org/7.0/x86_64/
       gpgcheck=1
       enabled=1
-      gpgkey=https://pgp.mongodb.com/server-6.0.asc
+      gpgkey=https://pgp.mongodb.com/server-7.0.asc
     dest: /etc/yum.repos.d/mongodb-org-6.0.repo
     mode: '0644'
 
