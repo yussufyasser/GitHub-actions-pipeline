@@ -19,7 +19,7 @@ jobs:
       - name: Install Ansible
         run: |
           sudo apt update
-          sudo apt install -y ansible sshpass
+          sudo apt install -y sshpass
 
       - name: Decode SSH Key
         run: |
@@ -32,10 +32,9 @@ jobs:
           ssh-add my-ec2-key.pem
 
 
-      - name: Test SSH to Private EC2 via Bastion
+      - name: Test raw SSH through bastion
         run: |
-          ssh -o StrictHostKeyChecking=no \
-              -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i my-ec2-key.pem -W %h:%p ec2-user@3.232.133.47" \
+          ssh -o "StrictHostKeyChecking=no" \
+              -o ProxyCommand="ssh -i my-ec2-key.pem -W %h:%p ec2-user@3.232.133.47" \
               -i my-ec2-key.pem ec2-user@192.168.82.19 "hostname"
-
 
