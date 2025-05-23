@@ -55,7 +55,7 @@ jobs:
         run: |
           terraform init
           terraform apply -auto-approve \
-            -var="vpc-id=${{ steps.eks_values.outputs.vpc_id }}" \
+            -var="vpc_id=${{ steps.eks_values.outputs.vpc_id }}" \
             -var="public_subnet_id=${{ steps.eks_values.outputs.public_subnet_id }}" \
             -var="private_subnet_id=${{ steps.eks_values.outputs.private_subnet_id }}" \
             -var="eks_worker_sg_id=${{ steps.eks_values.outputs.sg_id }}" \
