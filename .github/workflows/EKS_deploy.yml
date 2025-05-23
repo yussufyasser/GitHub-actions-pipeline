@@ -25,29 +25,44 @@ jobs:
           eksctl version
 
 
-      #clean exisisting EKS
-      - name: Cleanup existing cluster (if exists)
+      # Full cleanup of old cluster and nodegroups
+      - name: Delete existing cluster and nodegroup stacks
         continue-on-error: true
         run: |
-          eksctl delete cluster --name mycluster --region $AWS_REGION
+          echo "Deleting EKS cluster 'appcluster' if it exists..."
+          eksctl delete cluster --name appcluster --region $AWS_REGION || true
 
-      - name: Wait 10 min seconds to ensure deletion finishes
-        run: sleep 600
+          echo "Deleting CloudFormation stack 'eksctl-appcluster-cluster'..."
+          aws cloudformation delete-stack --stack-name eksctl-appcluster-cluster --region $AWS_REGION || true
 
+          echo "Finding and deleting nodegroup stacks..."
+          STACKS=$(aws cloudformation list-stacks \
+            --region $AWS_REGION \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "StackSummaries[?starts_with(StackName, 'eksctl-appcluster-nodegroup-')].StackName" \
+            --output text)
 
+          for STACK in $STACKS; do
+            echo "Deleting stack: $STACK"
+            aws cloudformation delete-stack --stack-name "$STACK" --region $AWS_REGION
+          done
 
-      #create EKS
-      - name: create EKS cluster
+          echo "Waiting for cluster stack to be fully deleted (if present)..."
+          aws cloudformation wait stack-delete-complete --stack-name eksctl-appcluster-cluster --region $AWS_REGION || true
+
+      # Create new EKS cluster
+      - name: Create EKS cluster
         run: |
-          eksctl create cluster -n mycluster
+          eksctl create cluster -n appcluster
 
+      # Get EKS details
       - name: Get EKS values from AWS
         id: eks_values
         run: |
-          VPC_ID=$(aws eks describe-cluster --name mycluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
-          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-          PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=mycluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-          SG_ID=$(aws eks describe-cluster --name mycluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
+          VPC_ID=$(aws eks describe-cluster --name appcluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
+          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=appcluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+          PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=appcluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
+          SG_ID=$(aws eks describe-cluster --name appcluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
 
           echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
           echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
