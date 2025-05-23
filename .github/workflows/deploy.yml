@@ -7,66 +7,34 @@ on:
       - completed
 
 jobs:
-  terraform:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  ansible:
     runs-on: ubuntu-latest
 
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ANSIBLE_HOST_KEY_CHECKING: False
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-
-      #install kubectl
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.29.0'
-
-      #get EKS values
-      - name: Get EKS values from AWS
-        id: eks_values
+      - name: Install Ansible
         run: |
-          VPC_ID=$(aws eks describe-cluster --name appcluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.vpcId" --output text)
-          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=appcluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-          PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=tag:eksctl.cluster.k8s.io/v1alpha1/cluster-name,Values=appcluster" --region $AWS_REGION --query "Subnets[0].SubnetId" --output text)
-          SG_ID=$(aws eks describe-cluster --name appcluster --region $AWS_REGION --query "cluster.resourcesVpcConfig.securityGroupIds[0]" --output text)
+          sudo apt update
+          sudo apt install -y ansible sshpass
 
-          echo "vpc_id=$VPC_ID" >> $GITHUB_OUTPUT
-          echo "public_subnet_id=$PUBLIC_SUBNET_ID" >> $GITHUB_OUTPUT
-          echo "private_subnet_id=$PRIVATE_SUBNET_ID" >> $GITHUB_OUTPUT
-          echo "sg_id=$SG_ID" >> $GITHUB_OUTPUT
-
-
-      - name: Decode SSH private key
+      - name: Decode Bastion and EC2 Keys
         run: |
+          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > bastion.pem
           echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > my-ec2-key.pem
-          chmod 600 my-ec2-key.pem
+          chmod 600 bastion.pem my-ec2-key.pem
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init and Apply
-        working-directory: terraform
+      - name: Add both keys to SSH agent
         run: |
-          terraform init
-          terraform apply -auto-approve \
-            -var="vpc_id=${{ steps.eks_values.outputs.vpc_id }}" \
-            -var="public_subnet_id=${{ steps.eks_values.outputs.public_subnet_id }}" \
-            -var="private_subnet_id=${{ steps.eks_values.outputs.private_subnet_id }}" \
-            -var="eks_worker_sg_id=${{ steps.eks_values.outputs.sg_id }}" \
-            -var="key_name=my-ec2-key"
+          eval "$(ssh-agent -s)"
+          ssh-add bastion.pem
+          ssh-add my-ec2-key.pem
 
-
-      - name: Configure kubeconfig
-        run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
-
-      - name: Apply Kubernetes resources
-        run: kubectl apply -f kubernetes/k8s.yaml
-
-      - name: Get Kubernetes services
-        run: kubectl get svc
+      - name: Run Ansible Playbook
+        working-directory: ansible/ansible
+        run: |
+          ansible-playbook -i inventory mongodb-playbook.yml --private-key my-ec2-key.pem

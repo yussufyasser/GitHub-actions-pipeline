@@ -1,0 +1,7 @@
+---
+- name: Install MongoDB on target host
+  hosts: mongodb
+  become: yes
+  roles:
+    - roles/mongodb_role
+

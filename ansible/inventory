@@ -1,0 +1,5 @@
+[private_ec2]
+private-instance ansible_host=192.168.82.19 ansible_user=ec2-user
+
+[private_ec2:vars]
+ansible_ssh_common_args='-o ProxyCommand="ssh -i my-ec2-key.pem -W %h:%p ec2-user@3.232.133.47"'

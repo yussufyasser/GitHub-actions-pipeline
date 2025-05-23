@@ -1,0 +1,33 @@
+---
+# tasks file for roles/mongodb_role
+- name: Add MongoDB Yum repo
+  copy:
+    content: |
+      [mongodb-org-6.0]
+      name=MongoDB Repository
+      baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/6.0/x86_64/
+      gpgcheck=1
+      enabled=1
+      gpgkey=https://pgp.mongodb.com/server-6.0.asc
+    dest: /etc/yum.repos.d/mongodb-org-6.0.repo
+    mode: '0644'
+
+- name: Install MongoDB
+  yum:
+    name: mongodb-org-6.0.13
+    state: present
+
+- name: Allow remote connections in mongod.conf
+  lineinfile:
+    path: /etc/mongod.conf
+    regexp: '^  bindIp:'
+    line: '  bindIp: 0.0.0.0'
+    backrefs: yes
+
+- name: Start MongoDB service
+  systemd:
+    name: mongod
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
