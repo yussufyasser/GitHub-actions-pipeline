@@ -1,4 +1,4 @@
-name: Terraform Infra & Ansible MongoDB Deploy
+name: Terraform Infra & Ansible MongoDB & Kubernetes Deploy
 
 on:
   workflow_run:
