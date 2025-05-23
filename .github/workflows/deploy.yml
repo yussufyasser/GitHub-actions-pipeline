@@ -32,9 +32,9 @@ jobs:
           ssh-add my-ec2-key.pem
 
 
-      - name: Test raw SSH through bastion
+      - name: Test SSH to Private EC2 via Bastion
         run: |
-          ssh -o "StrictHostKeyChecking=no" \
-              -o ProxyCommand="ssh -i my-ec2-key.pem -W %h:%p ec2-user@3.232.133.47" \
-              -i my-ec2-key.pem ec2-user@192.168.82.19 "hostname"
+          ssh -o StrictHostKeyChecking=no \
+              -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i my-ec2-key.pem -W %h:%p ec2-user@3.232.133.47" \
+              -i my-ec2-key.pem ec2-user@192.168.82.19 hostname
 
