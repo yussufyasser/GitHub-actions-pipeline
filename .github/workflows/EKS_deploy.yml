@@ -31,18 +31,19 @@ jobs:
         run: |
           eksctl delete cluster --name mycluster --region $AWS_REGION
 
-      - name: Wait for cluster deletion (only if it existed)
+      - name: Wait until EKS cluster is deleted
         run: |
-          for i in {1..30}; do
-            echo "Checking if EKS cluster 'mycluster' still exists..."
+          for attempt in {1..30}; do
+            echo "Checking if EKS cluster 'mycluster' still exists (Attempt $attempt)..."
             aws eks describe-cluster --name mycluster --region $AWS_REGION > /dev/null 2>&1
             if [ $? -ne 0 ]; then
               echo "Cluster 'mycluster' no longer exists."
               break
             fi
-            echo "Cluster still exists. Waiting..."
+            echo "Cluster still exists. Waiting 20 seconds..."
             sleep 20
           done
+
 
 
 
