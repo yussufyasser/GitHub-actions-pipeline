@@ -159,9 +159,16 @@ jobs:
 
           kubectl create namespace monitoring
 
-          helm install prometheus prometheus-community/prometheus \--namespace monitoring
+          helm uninstall prometheus -n monitoring
 
-          
+
+          helm install prometheus prometheus-community/prometheus \
+          -n monitoring \
+          --create-namespace \
+          --set server.persistentVolume.storageClass=gp2 \
+          --set alertmanager.persistentVolume.storageClass=gp2
+
+
 
 
 
