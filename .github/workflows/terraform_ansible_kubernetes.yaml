@@ -138,15 +138,38 @@ jobs:
             MONGO_PORT: "27017"
           EOF
 
+      #Configure kubeconfig
       - name: Configure kubeconfig
         run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
 
+      #apply kubectl
       - name: Apply Kubernetes resources
         run: kubectl apply -R -f kubernetes/
 
+      #get service
       - name: Get Kubernetes services
         run: kubectl get svc
-      - name: Get Kubernetes Map
-        run: kubectl get configmap chat-app-config -o yaml
+      
+      #install helm
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+
+          kubectl create namespace monitoring
+
+          helm install prometheus prometheus-community/prometheus \--namespace monitoring
+
+          
+
+
+
+      
+
+         
+      
+
+
         
 
