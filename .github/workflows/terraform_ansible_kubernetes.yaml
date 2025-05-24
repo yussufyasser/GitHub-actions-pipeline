@@ -83,6 +83,7 @@ jobs:
         working-directory: terraform
         run: |
           terraform init
+          terraform destroy -auto-approve 
           terraform apply -auto-approve \
             -var="vpc_id=${{ steps.eks_values.outputs.vpc_id }}" \
             -var="public_subnet_id=${{ steps.eks_values.outputs.public_subnet_id }}" \
@@ -150,23 +151,7 @@ jobs:
       - name: Get Kubernetes services
         run: kubectl get svc
       
-      #install helm
-      - name: Install Helm
-        run: |
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo update
 
-          kubectl create namespace monitoring
-
-          helm uninstall prometheus -n monitoring
-
-
-          helm install prometheus prometheus-community/prometheus \
-          -n monitoring \
-          --create-namespace \
-          --set server.persistentVolume.storageClass=gp2 \
-          --set alertmanager.persistentVolume.storageClass=gp2
 
 
 
