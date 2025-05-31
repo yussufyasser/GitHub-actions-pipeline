@@ -81,8 +81,3 @@ jobs:
           eksctl create cluster -n appcluster --region $AWS_REGION
 
 
-
-      # Create new EKS cluster
-      - name: Create EKS cluster
-        run: |
-          eksctl create cluster -n appcluster
