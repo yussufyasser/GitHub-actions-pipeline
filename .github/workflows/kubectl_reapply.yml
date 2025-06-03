@@ -1,4 +1,4 @@
-name: Terraform Infra & Ansible MongoDB & Kubernetes Deploy
+name: Kubectl_Reapply
 
 on:
   workflow_run:
