@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: chat-app
-        image: yussufzoulfakar/chatingapp:1.0
+        image: yussufzoulfakar/chatpipeline
         ports:
         - containerPort: 5000
         envFrom:

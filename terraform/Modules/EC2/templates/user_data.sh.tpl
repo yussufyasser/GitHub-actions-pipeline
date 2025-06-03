@@ -47,3 +47,19 @@ echo "" >> /etc/prometheus/prometheus.yml
 echo "  - job_name: 'mongodb_exporter'" >> /etc/prometheus/prometheus.yml
 echo "    static_configs:" >> /etc/prometheus/prometheus.yml
 echo "      - targets: ['${databaseip}:9216']" >> /etc/prometheus/prometheus.yml
+
+
+sudo tee /etc/yum.repos.d/grafana.repo <<EOF
+[grafana]
+name=Grafana OSS
+baseurl=https://packages.grafana.com/oss/rpm
+repo_gpgcheck=1
+enabled=1
+gpgcheck=1
+gpgkey=https://packages.grafana.com/gpg.key
+EOF
+
+sudo dnf install grafana -y
+
+sudo systemctl daemon-reexec   
+sudo systemctl enable --now grafana-server
