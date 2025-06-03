@@ -52,11 +52,6 @@
     name: yum-utils
     state: present
 
-# Add Docker repo
-- name: Add Docker CE repository
-  get_url:
-    url: https://download.docker.com/linux/centos/docker-ce.repo
-    dest: /etc/yum.repos.d/docker-ce.repo
 
 # Install Docker
 - name: Install Docker Engine
@@ -98,4 +93,3 @@
     published_ports:
       - "9216:9216"
     command: "--mongodb.uri=mongodb://127.0.0.1:17001"
-
