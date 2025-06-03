@@ -27,6 +27,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y ansible sshpass jq unzip
+          ansible-galaxy collection install community.docker
 
       #Decode SSH key
       - name: Decode SSH key
