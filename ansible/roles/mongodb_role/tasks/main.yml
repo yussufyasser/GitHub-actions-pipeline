@@ -57,9 +57,7 @@
 - name: Install Docker Engine
   yum:
     name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
+      - docker
     state: present
 
 # Start and enable Docker service
