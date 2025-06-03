@@ -22,6 +22,6 @@ resource "aws_instance" "bastion" {
  }
 
 user_data = templatefile("${path.module}/templates/user_data.sh.tpl", {
-databaseip = aws_instance.instance.mongodb.private_ip
+databaseip = aws_instance.mongodb.private_ip
 })
 }
