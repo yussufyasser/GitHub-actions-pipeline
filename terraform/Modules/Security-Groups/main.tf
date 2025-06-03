@@ -16,6 +16,13 @@ resource "aws_security_group" "mongo_sg" {
  protocol = "tcp"
  security_groups = [aws_security_group.bastion_sg.id]
  }
+ ingress {
+ description = "Allow promethus to send to the mongo_sg"
+ from_port = 9216
+ to_port = 9216
+ protocol = "tcp"
+ security_groups = [aws_security_group.bastion_sg.id]
+ }
  egress {
  from_port = 0
  to_port = 0
@@ -38,6 +45,23 @@ resource "aws_security_group" "bastion_sg" {
  protocol = "tcp"
  cidr_blocks = [var.my_ip]
  }
+
+ingress {
+ description = "Allow accessing promethus"
+ from_port = 9090
+ to_port = 9090
+ protocol = "tcp"
+ cidr_blocks = [var.my_ip]
+ }
+
+ ingress {
+ description = "Allow accessing graphana"
+ from_port = 3000
+ to_port = 3000
+ protocol = "tcp"
+ cidr_blocks = [var.my_ip]
+ }
+
  egress {
  from_port = 0
  to_port = 0

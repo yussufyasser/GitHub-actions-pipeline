@@ -20,4 +20,8 @@ resource "aws_instance" "bastion" {
  tags = {
  Name = "Bastion-Public"
  }
+
+user_data = templatefile("${path.module}/templates/user_data.sh.tpl", {
+databaseip = aws_instance.instance.mongodb.private_ip
+})
 }
