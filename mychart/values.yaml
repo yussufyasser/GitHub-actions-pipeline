@@ -9,4 +9,3 @@ service:
   targetPort: 5000
 
 configMapName: chat-app-config
-forceUpdate: ""
