@@ -151,7 +151,7 @@ jobs:
 
       #install helm
       - name: Install Helm
-        run: helm upgrade --install chat-app ./chat-app
+        run: helm upgrade --install chat-app ./mychart
 
       #get service
       - name: Get Kubernetes services

@@ -38,6 +38,6 @@ jobs:
       #upgrade helm
       - name: Upgrade Helm
         run: |
-         helm upgrade --install chat-app ./chat-app --set image.tag=latest --set forceUpdate=$(date +%s)
+         helm upgrade --install chat-app ./mychart --set image.tag=latest --set forceUpdate=$(date +%s)
 
 
