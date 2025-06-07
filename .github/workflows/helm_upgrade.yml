@@ -36,10 +36,14 @@ jobs:
         run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
 
 
-      #uninstall Helm
-      - name: uninstall Helm
+      - name: Uninstall existing Helm release (if exists)
         run: |
-         helm uninstall chat-app 
+          if helm status chat-app --namespace default > /dev/null 2>&1; then
+            helm uninstall chat-app --namespace default
+          else
+            echo "No existing release to uninstall."
+          fi
+
 
       #install Helm
       - name: install Helm
