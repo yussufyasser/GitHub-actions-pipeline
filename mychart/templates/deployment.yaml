@@ -14,11 +14,11 @@ spec:
         force-update: "{{ .Values.forceUpdate | quote }}"
     spec:
       containers:
-      - name: {{ .Release.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        ports:
-        - containerPort: {{ .Values.service.targetPort }}
-        envFrom:
-        - configMapRef:
-            name: "{{ .Values.configMapName }}"
+        - name: {{ .Release.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          envFrom:
+            - configMapRef:
+                name: "{{ .Values.configMapName }}"
