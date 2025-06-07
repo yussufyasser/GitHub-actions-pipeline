@@ -26,26 +26,18 @@ jobs:
         with:
           version: 'v1.29.0'
 
+      #install helm
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.12.0'
+
       - name: Configure kubeconfig
         run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
 
-      #delete deployment
-      - name: delete deployment
-        working-directory: kubernetes
-
+      #upgrade helm
+      - name: Upgrade Helm
         run: |
-         kubectl delete -f deployment.yaml
+         helm upgrade --install chat-app ./chat-app --set image.tag=latest --set forceUpdate=$(date +%s)
 
-      #sleep
-      - name: sleep
-        working-directory: kubernetes
 
-        run: |
-         sleep 10
-
-      #apply deployment
-      - name: apply deployment
-        working-directory: kubernetes
-
-        run: |
-         kubectl apply -f deployment.yaml

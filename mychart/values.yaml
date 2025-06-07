@@ -2,9 +2,12 @@ replicaCount: 2
 
 image:
   repository: yussufzoulfakar/chatpipeline
+  tag: latest
   pullPolicy: IfNotPresent
 
-container:
-  port: 5000
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5000
 
 configMapName: chat-app-config
