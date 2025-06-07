@@ -1,0 +1,10 @@
+replicaCount: 2
+
+image:
+  repository: yussufzoulfakar/chatpipeline
+  pullPolicy: IfNotPresent
+
+container:
+  port: 5000
+
+configMapName: chat-app-config
