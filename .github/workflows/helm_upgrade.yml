@@ -36,9 +36,17 @@ jobs:
         run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
 
       #upgrade helm
+      - name: debugging Helm
+        run: |
+         helm template ./mychart --set forceUpdate=$(date +%s)
+
+      #upgrade helm
       - name: Upgrade Helm
         run: |
          helm upgrade --install chat-app ./mychart --set forceUpdate=$(date +%s)
+
+
+
 
 
 

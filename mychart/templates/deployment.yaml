@@ -11,7 +11,7 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}
-        forceUpdate: "{{ .Values.forceUpdate | quote }}"
+        force-update: "{{ .Values.forceUpdate | quote }}"
     spec:
       containers:
       - name: {{ .Release.Name }}
