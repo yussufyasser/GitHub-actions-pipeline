@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: yussufzoulfakar/chatingapp
+  tag: "1.0"
+  pullPolicy: IfNotPresent
+
+container:
+  port: 5000
+
+env:
+  dbName: "chatdb"
+  mongoHost: "192.168.118.200"
+  mongoPort: "27017"
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5000
