@@ -35,15 +35,16 @@ jobs:
       - name: Configure kubeconfig
         run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
 
-      #upgrade helm
-      - name: debugging Helm
-        run: |
-         helm template ./mychart --set forceUpdate=$(date +%s)
 
-      #upgrade helm
-      - name: Upgrade Helm
+      #uninstall Helm
+      - name: uninstall Helm
         run: |
-         helm upgrade --install chat-app ./mychart --set forceUpdate=$(date +%s)
+         helm uninstall chat-app ./mychart
+
+      #install Helm
+      - name: install Helm
+        run: |
+         helm install chat-app ./mychart
 
 
 
