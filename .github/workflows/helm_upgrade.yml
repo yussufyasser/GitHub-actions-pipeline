@@ -39,7 +39,7 @@ jobs:
       #uninstall Helm
       - name: uninstall Helm
         run: |
-         helm uninstall chat-app ./mychart
+         helm uninstall chat-app 
 
       #install Helm
       - name: install Helm
