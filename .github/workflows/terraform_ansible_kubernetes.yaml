@@ -130,6 +130,10 @@ jobs:
         uses: azure/setup-helm@v3
         with:
           version: 'v3.12.0'
+
+        #Configure kubeconfig
+      - name: Configure kubeconfig
+        run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
   
       - name: Generate ConfigMap with MongoDB IP
         run: |
@@ -145,9 +149,9 @@ jobs:
             MONGO_PORT: "27017"
           EOF
 
-      #Configure kubeconfig
-      - name: Configure kubeconfig
-        run: aws eks update-kubeconfig --name appcluster --region $AWS_REGION
+      - name: Make ConfigMap
+        run: |
+          kubectl apply -f kubernetes/generated
 
       #install helm
       - name: Install Helm
