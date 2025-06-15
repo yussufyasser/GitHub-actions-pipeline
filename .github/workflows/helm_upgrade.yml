@@ -1,4 +1,4 @@
-name: Kubectl_Reapply
+name: helm_upgrade
 
 on:
   workflow_run:
